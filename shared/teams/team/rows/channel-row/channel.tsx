@@ -18,24 +18,15 @@ const ChannelRow = (props: ChannelRowProps) => {
   const {channel, teamID, conversationIDKey} = props
   const isGeneral = channel.channelname === 'general'
 
-  const _selected = Container.useSelector(
+  const selected = Container.useSelector(
     state => !!state.teams.selectedChannels.get(teamID)?.has(channel.channelname)
   )
-  const [selected, setSelected] = React.useState(_selected)
-  const prevSelected = Container.usePrevious(_selected)
-  // TODO: suddenly can't select more than one at a time ???
-  React.useEffect(() => {
-    if (prevSelected !== _selected) {
-      setSelected(_selected)
-    }
-  }, [setSelected, _selected, prevSelected])
-  const yourRole = Container.useSelector(state => Constants.getRole(state, teamID))
-  const canDelete = Constants.isAdmin(yourRole) || Constants.isOwner(yourRole)
+  const canPerform = Container.useSelector(state => Constants.getCanPerformByID(state, teamID))
+  const canDelete = canPerform.deleteChannel
 
   const dispatch = Container.useDispatch()
   const nav = Container.useSafeNavigation()
   const onSelect = (selected: boolean) => {
-    setSelected(selected)
     dispatch(TeamsGen.createSetChannelSelected({channel: channel.channelname, selected, teamID}))
   }
   const onEditChannel = () =>
@@ -56,7 +47,9 @@ const ChannelRow = (props: ChannelRowProps) => {
     : `${channel.numParticipants.toLocaleString()} ${pluralize('member', channel.numParticipants)}`
   const body = (
     <Kb.Box2 direction="vertical" fullWidth={true}>
-      <Kb.Text type="BodySemibold">#{channel.channelname}</Kb.Text>
+      <Kb.Text type="BodySemibold" lineClamp={1}>
+        #{channel.channelname}
+      </Kb.Text>
       <Kb.Box2 direction="vertical" fullWidth={true}>
         <Kb.Text type="BodySmall" lineClamp={1}>
           {channel.description}{' '}
@@ -111,7 +104,6 @@ const ChannelRow = (props: ChannelRowProps) => {
     <Kb.ListItem2
       action={actions}
       onlyShowActionOnHover="fade"
-      className="checkboxRow"
       height={Styles.isMobile ? 90 : 64}
       icon={checkCircle}
       iconStyleOverride={styles.checkCircle}
@@ -130,7 +122,7 @@ const styles = Styles.styleSheetCreate(
     ({
       checkCircle: Styles.padding(Styles.globalMargins.tiny, Styles.globalMargins.small),
       listItemMargin: {marginLeft: 0},
-      mobileMarginsHack: {marginRight: 48}, // ListItem2 is malfunctioning because the checkbox width is unusual
+      mobileMarginsHack: Styles.platformStyles({isMobile: {marginRight: 48}}), // ListItem2 is malfunctioning because the checkbox width is unusual
       selected: {backgroundColor: Styles.globalColors.blueLighterOrBlueDarker},
     } as const)
 )
